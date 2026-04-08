@@ -8,6 +8,7 @@ import type { Squad } from '../graphql/sources';
 import { decrypt } from '../components/crypto';
 import type { MarketingCta } from '../components/marketingCta/common';
 import type { Feed } from '../graphql/feed';
+import { isDevelopment } from './constants';
 import type { Continent } from './geo';
 
 interface NotificationsBootData {
@@ -136,6 +137,30 @@ interface GetBootDataParams {
   pathname?: string;
 }
 
+const enrichBootWithDevUser = (boot: Boot): Boot => {
+  if (!isDevelopment || 'providers' in boot.user) {
+    return boot;
+  }
+
+  const mockUser: LoggedUser = {
+    ...boot.user,
+    id: boot.user.id,
+    name: 'Dev User',
+    email: 'dev@daily.dev',
+    username: 'devuser',
+    image:
+      'https://daily-now-res.cloudinary.com/image/upload/v1/placeholders/placeholder3',
+    permalink: 'http://localhost:5002/devuser',
+    infoConfirmed: true,
+    providers: ['google'],
+    createdAt: new Date().toISOString(),
+    reputation: 100,
+    balance: { amount: 0 },
+  };
+
+  return { ...boot, user: mockUser };
+};
+
 export async function getBootData({
   app,
   url,
@@ -153,5 +178,6 @@ export async function getBootData({
     },
   });
   const result = await res.json();
-  return await enrichBootWithFeatures(result);
+  const enriched = await enrichBootWithFeatures(result);
+  return enrichBootWithDevUser(enriched);
 }

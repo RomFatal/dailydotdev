@@ -17,7 +17,7 @@ import { PromptElement } from './modals/Prompt';
 import { useNotificationParams } from '../hooks/useNotificationParams';
 import { useAuthContext } from '../contexts/AuthContext';
 import { SharedFeedPage } from './utilities';
-import { isTesting, onboardingUrl } from '../lib/constants';
+import { isDevelopment, isTesting, onboardingUrl } from '../lib/constants';
 import { useBanner } from '../hooks/useBanner';
 import { useGrowthBookContext } from './GrowthBookProvider';
 import {
@@ -116,7 +116,11 @@ function MainLayoutComponent({
   const isPageApplicableForOnboarding =
     !page || feeds.includes(page) || isCustomFeed;
   const shouldRedirectOnboarding =
-    !user && isPageReady && isPageApplicableForOnboarding && !isTesting;
+    !user &&
+    isPageReady &&
+    isPageApplicableForOnboarding &&
+    !isTesting &&
+    !isDevelopment;
 
   useEffect(() => {
     if (!shouldRedirectOnboarding) {

@@ -4,6 +4,7 @@ import type { GraphQLError } from 'graphql-request/dist/types';
 import type { ZodError } from 'zod';
 import type { PublicProfile, UserShortProfile } from '../lib/user';
 import { graphqlUrl } from '../lib/config';
+import { isDevelopment } from '../lib/constants';
 import type { UserTransactionStatus } from './njord';
 // GraphQL Relay pagination types
 
@@ -231,6 +232,33 @@ export const gqlClient = new GraphQLClient(graphqlUrl, {
   credentials: 'include',
   fetch: globalThis.fetch,
 });
+
+// In development with mock user, suppress UNAUTHENTICATED errors
+// so the error overlay doesn't block the UI
+if (isDevelopment) {
+  const originalRequest = gqlClient.request.bind(gqlClient);
+  (gqlClient as unknown as Record<string, unknown>).request = ((
+    ...args: Parameters<typeof originalRequest>
+  ) =>
+    originalRequest(...args).catch(
+      (
+        err: Error & {
+          response?: { errors?: Array<{ extensions?: { code?: string } }> };
+        },
+      ) => {
+        if (
+          err?.response?.errors?.some(
+            (e) => e?.extensions?.code === 'UNAUTHENTICATED',
+          )
+        ) {
+          // eslint-disable-next-line no-console
+          console.warn('[Dev] Auth required — mock user has no real session');
+          return null;
+        }
+        throw err;
+      },
+    )) as typeof gqlClient.request;
+}
 
 export const gqlRequest: typeof gqlClient.request = (...args) =>
   gqlClient.request(...args);

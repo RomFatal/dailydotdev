@@ -21,7 +21,7 @@ import {
 } from '@growthbook/growthbook-react';
 import type { WidenPrimitives, JSONValue } from '@growthbook/growthbook';
 import dynamic from 'next/dynamic';
-import { isGBDevMode, isProduction } from '../lib/constants';
+import { isDevelopment, isGBDevMode, isProduction } from '../lib/constants';
 import type { BootApp, BootCacheData } from '../lib/boot';
 import { apiUrl } from '../lib/config';
 import { useRequestProtocol } from '../hooks/useRequestProtocol';
@@ -113,6 +113,14 @@ export const GrowthBookProvider = ({
       }
     }
   }, [experimentation?.features, gb]);
+
+  // In development without experimentation key, mark as ready immediately
+  useEffect(() => {
+    if (isDevelopment && gb && !experimentation?.features && !ready) {
+      gb.setFeatures?.({});
+      setReady(true);
+    }
+  }, [gb, experimentation?.features, ready]);
 
   useEffect(() => {
     callback.current = async (experiment, result) => {
